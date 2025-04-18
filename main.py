@@ -7,8 +7,8 @@ LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 
 # 複数のRSS URLをここにリストで記述
 rss_urls = [
-    "https://rsshub.app/tiktok/user/_ritsuki_hikaru",
-    "https://rsshub.app/tiktok/user/yanagi_miyu_official"
+    "https://rss.app/feeds/LqP6Qvlf6WtxXyGS.xml",
+    "https://rss.app/feeds/gGRbYTC3RVX3PPMa.xml"
 ]
 
 # 最後に通知した投稿のリンクを保存するファイル
