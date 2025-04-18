@@ -1,51 +1,36 @@
 import feedparser
-import requests
 import os
+import requests
 
-RSS_URL = os.getenv("RSS_URL")
-LINE_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 
-# 新着チェック用に保存ファイル
-HISTORY_FILE = "latest_video.txt"
+# 複数のRSS URLをここにリストで記述
+rss_urls = [
+    "https://rsshub.app/tiktok/user/_ritsuki_hikaru",
+    "https://rsshub.app/tiktok/user/yanagi_miyu_official"
+]
 
-def get_latest_video_url():
-    feed = feedparser.parse(RSS_URL)
-    if feed.entries:
-        return feed.entries[0].link
-    return None
-
-def is_new_video(latest_url):
-    if not os.path.exists(HISTORY_FILE):
-        return True
-    with open(HISTORY_FILE, "r") as f:
-        saved_url = f.read().strip()
-    return saved_url != latest_url
-
-def save_latest_video(url):
-    with open(HISTORY_FILE, "w") as f:
-        f.write(url)
-
-def send_broadcast_message(text):
+def send_line_broadcast(message):
+    url = "https://api.line.me/v2/bot/message/broadcast"
     headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {LINE_TOKEN}"
+        "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
     }
-    payload = {
+    data = {
         "messages": [{
             "type": "text",
-            "text": text
+            "text": message
         }]
     }
-    r = requests.post("https://api.line.me/v2/bot/message/broadcast", headers=headers, json=payload)
-    print(f"Sent! Status: {r.status_code}, Response: {r.text}")
+    requests.post(url, headers=headers, json=data)
 
-def main():
-    latest_url = get_latest_video_url()
-    if latest_url and is_new_video(latest_url):
-        send_broadcast_message(f"新しいTikTok動画が投稿されました！\n{latest_url}")
-        save_latest_video(latest_url)
-    else:
-        print("新着動画なし")
-
-if __name__ == "__main__":
-    main()
+# 各RSSをチェック
+for rss_url in rss_urls:
+    feed = feedparser.parse(rss_url)
+    if feed.entries:
+        latest_entry = feed.entries[0]
+        title = latest_entry.title
+        link = latest_entry.link
+        user = rss_url.split("/")[-1]  # ユーザー名抽出
+        message = f"📢 {user} の新着投稿がありました！\n{title}\n{link}"
+        send_line_broadcast(message)
