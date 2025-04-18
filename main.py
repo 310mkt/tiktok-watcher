@@ -24,12 +24,14 @@ rss_urls = [
 last_post_file = "last_posts.json"
 
 def load_last_posts():
+    # ファイルが存在すれば読み込む
     if os.path.exists(last_post_file):
         with open(last_post_file, "r") as f:
             return json.load(f)
     return {}
 
 def save_last_posts(last_posts):
+    # ファイルに保存
     with open(last_post_file, "w") as f:
         json.dump(last_posts, f)
 
@@ -79,8 +81,10 @@ current_hour = datetime.now(japan_timezone).hour
 if 1 <= current_hour < 9:
     exit()
 
+# 前回の投稿情報をロード
 last_posts = load_last_posts()
 
+# RSSフィードをチェック
 for rss_url in rss_urls:
     feed = feedparser.parse(rss_url)
     if feed.entries:
@@ -89,9 +93,10 @@ for rss_url in rss_urls:
         user = rss_url.split("/")[-1]
         title = latest_entry.title
 
+        # 既に通知した投稿はスキップ
         if last_posts.get(user) == post_link:
             print(f"Skipping post for {user} (link: {post_link})")  # デバッグ用ログ
-            continue  # 既に通知した投稿はスキップ
+            continue
 
         # 通知1: 投稿の情報
         info_message = f"📢 {title}\n{post_link}"
