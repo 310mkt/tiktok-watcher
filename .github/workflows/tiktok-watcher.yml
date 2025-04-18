@@ -8,16 +8,12 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Restore last_posts.json from artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: last-posts
-        continue-on-error: true  # 初回や存在しない場合に備える
-
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
@@ -25,14 +21,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # 🔽 前回の実行で保存された last_posts.json をダウンロード
+      - name: Download last_posts artifact if exists
+        uses: actions/download-artifact@v3
+        with:
+          name: last-posts
+          path: .
+        continue-on-error: true  # 初回実行ではアーティファクトが存在しない場合を許容
+
+      # 🔽 main.py を実行（この中で last_posts.json を読み書き）
       - name: Run TikTok checker
         run: python main.py
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      - name: Save last_posts.json to artifact
-        if: always()
+      # 🔽 実行後に last_posts.json をアップロードして保存
+      - name: Upload last_posts artifact
         uses: actions/upload-artifact@v3
         with:
           name: last-posts
