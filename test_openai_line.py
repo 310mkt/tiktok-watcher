@@ -11,15 +11,16 @@ title = "新しいダンス動画を投稿しました🕺🔥"
 
 # OpenAIにコメント生成依頼
 openai.api_key = OPENAI_API_KEY
-response = openai.Completion.create(  # `Completion.create` を使用
-    model="gpt-3.5-turbo",  # または最新のモデル
-    prompt=f"この投稿タイトルに返信するコメントを考えて: 「{title}」",
-    max_tokens=60,  # 生成するコメントの最大トークン数
-    temperature=0.7  # 生成されるコメントの多様性
+response = openai.ChatCompletion.create(  # 新しいAPIを使用
+    model="gpt-3.5-turbo",  # もしくは最新モデル
+    messages=[
+        {"role": "system", "content": "あなたはTikTokに投稿された動画への面白くて短くて印象に残る、でも誰も傷つけない返信コメントを考えるアシスタントです。"},
+        {"role": "user", "content": f"この投稿タイトルに返信するコメントを考えて: 「{title}」"}
+    ]
 )
 
 # コメントを取得
-comment = response['choices'][0]['text'].strip()
+comment = response['choices'][0]['message']['content'].strip()
 
 # LINEでコメントを通知
 def send_line_broadcast(message):
