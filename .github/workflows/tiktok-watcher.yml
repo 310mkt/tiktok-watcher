@@ -22,5 +22,4 @@ jobs:
       - name: Run TikTok checker
         run: python main.py
         env:
-          RSS_URL: ${{ secrets.RSS_URL }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
