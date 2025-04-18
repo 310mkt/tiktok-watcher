@@ -9,7 +9,7 @@ from datetime import datetime
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# OpenAI APIキー設定
+# OpenAI APIキー設定（必要であればコメント解除）
 # openai.api_key = OPENAI_API_KEY
 
 # 複数のRSS URLをここにリストで記述
@@ -20,20 +20,24 @@ rss_urls = [
     "https://rss.app/feeds/gGRbYTC3RVX3PPMa.xml"
 ]
 
-# 通知履歴ファイル
-last_post_file = "last_posts.json"
+# 作業ディレクトリに保存するlast_posts.jsonのパス
+last_post_file = os.path.join(os.getcwd(), "last_posts.json")
 
 def load_last_posts():
-    # ファイルが存在すれば読み込む
-    if os.path.exists(last_post_file):
-        with open(last_post_file, "r") as f:
-            return json.load(f)
+    try:
+        if os.path.exists(last_post_file):
+            with open(last_post_file, "r") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading last posts: {e}")
     return {}
 
 def save_last_posts(last_posts):
-    # ファイルに保存
-    with open(last_post_file, "w") as f:
-        json.dump(last_posts, f)
+    try:
+        with open(last_post_file, "w") as f:
+            json.dump(last_posts, f)
+    except Exception as e:
+        print(f"Error saving last posts: {e}")
 
 def send_line_broadcast(message):
     url = "https://api.line.me/v2/bot/message/broadcast"
