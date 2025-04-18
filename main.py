@@ -6,7 +6,6 @@ from openai import OpenAI
 RSS_URL = os.getenv("RSS_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-LINE_USER_ID = os.getenv("LINE_USER_ID")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -40,14 +39,18 @@ for entry in new_videos:
 
     # LINE通知（Messaging API）
     requests.post(
-        "https://api.line.me/v2/bot/message/push",
-        headers={
-            "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
-            "Content-Type": "application/json"
+        "https://api.line.me/v2/bot/message/broadcast",
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
         },
-        json={
-            "to": LINE_USER_ID,
-            "messages": [{"type": "text", "text": f"{entry.title}\n{comment}\n{entry.link}"}]
+        data = {
+            "messages": [
+                {
+                    "type": "text",
+                    "text": "こんにちは！新着動画があります📢"
+                }
+            ]
         }
     )
 
