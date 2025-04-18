@@ -69,7 +69,7 @@ for rss_url in rss_urls:
             continue
 
         # 新規投稿をLINEで通知
-        message = f"📢 {user} の新着投稿がありました！\n{title}\n{post_link}"
+        message = f"📢「{title}」\n{post_link}"
         send_line_broadcast(message)
 
         # 通知済みリンクを保存
