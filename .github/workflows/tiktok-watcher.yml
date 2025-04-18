@@ -21,7 +21,7 @@ jobs:
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}  # LINEアクセストークン
       - name: Upload last_posts.json as artifact
-        uses: actions/upload-artifact@v3  # v3に変更
+        uses: actions/upload-artifact@v2  # v2に変更
         with:
           name: last_posts  # アップロードするアーティファクト名
           path: last_posts.json  # アップロードするファイルのパス
