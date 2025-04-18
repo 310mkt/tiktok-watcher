@@ -21,23 +21,23 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # 🔽 前回の実行で保存された last_posts.json をダウンロード
+      # 🔽 last_posts.json を復元（存在すれば）
       - name: Download last_posts artifact if exists
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         with:
           name: last-posts
           path: .
-        continue-on-error: true  # 初回実行ではアーティファクトが存在しない場合を許容
+        continue-on-error: true
 
-      # 🔽 main.py を実行（この中で last_posts.json を読み書き）
+      # 🔽 メイン処理を実行
       - name: Run TikTok checker
         run: python main.py
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
 
-      # 🔽 実行後に last_posts.json をアップロードして保存
+      # 🔽 実行後の last_posts.json を保存
       - name: Upload last_posts artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: last-posts
           path: last_posts.json
