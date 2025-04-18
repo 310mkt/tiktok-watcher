@@ -3,20 +3,21 @@ import os
 import requests
 import json
 from datetime import datetime
+import openai
 
 # 環境変数からトークンを取得
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # OpenAI APIキー設定
-# openai.api_key = OPENAI_API_KEY
+openai.api_key = OPENAI_API_KEY
 
 # 複数のRSS URLをここにリストで記述
 rss_urls = [
     # @_ritsuki_hikaru
-     "https://rss.app/feeds/LqP6Qvlf6WtxXyGS.xml",
+    "https://rss.app/feeds/LqP6Qvlf6WtxXyGS.xml",
     # @yanagi_miyu_official
-     "https://rss.app/feeds/gGRbYTC3RVX3PPMa.xml"
+    "https://rss.app/feeds/gGRbYTC3RVX3PPMa.xml"
 ]
 
 # 通知履歴ファイル
@@ -49,16 +50,16 @@ def send_line_broadcast(message):
 # コメント生成関数は一時的に無効化
 # def generate_comment(title):
 #     prompt = f"""
-# 以下のTikTokの動画タイトルに対するコメントを1つ考えてください。
-# - コメント対象はアイドル
-# - 面白くて、印象に残る
-# - 短め（20文字以内）
-# - 基本は相手を褒める内容
-# - 誰も傷つけない内容
+#     以下のTikTokの動画タイトルに対するコメントを1つ考えてください。
+#     - コメント対象はアイドル
+#     - 面白くて、印象に残る
+#     - 短め（20文字以内）
+#     - 基本は相手を褒める内容
+#     - 誰も傷つけない内容
 
-# タイトル: {title}
-# コメント:
-# """
+#     タイトル: {title}
+#     コメント:
+#     """
 #     response = openai.ChatCompletion.create(
 #         model="gpt-3.5-turbo",
 #         messages=[{
@@ -86,7 +87,7 @@ for rss_url in rss_urls:
         title = latest_entry.title
 
         if last_posts.get(user) == post_link:
-            continue
+            continue  # 既に通知した投稿はスキップ
 
         # 通知1: 投稿の情報
         info_message = f"📢 {title}\n{post_link}"
