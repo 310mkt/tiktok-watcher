@@ -32,6 +32,11 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add .  # 変更されたファイルを追加
-          git commit -m "Update state with latest post URL"
-          git push
+          # 状態の変更があった場合のみコミット
+          if [[ $(git status --porcelain) ]]; then
+            git add .
+            git commit -m "Update state with latest post URL"
+            git push
+          else
+            echo "No changes to commit."
+          fi
