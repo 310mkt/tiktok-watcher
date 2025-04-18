@@ -47,28 +47,29 @@ def send_line_broadcast(message):
     }
     requests.post(url, headers=headers, json=data)
 
-def generate_comment(title):
-    prompt = f"""
-以下のTikTokの動画タイトルに対するコメントを1つ考えてください。
-- コメント対象はアイドル
-- 面白くて、印象に残る
-- 短め（20文字以内）
-- 基本は相手を褒める内容
-- 誰も傷つけない内容
+# コメント生成関数は一時的に無効化
+# def generate_comment(title):
+#     prompt = f"""
+# 以下のTikTokの動画タイトルに対するコメントを1つ考えてください。
+# - コメント対象はアイドル
+# - 面白くて、印象に残る
+# - 短め（20文字以内）
+# - 基本は相手を褒める内容
+# - 誰も傷つけない内容
 
-タイトル: {title}
-コメント:
-"""
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{
-            "role": "user",
-            "content": prompt
-        }],
-        temperature=0.8,
-        max_tokens=60
-    )
-    return response.choices[0].message["content"].strip()
+# タイトル: {title}
+# コメント:
+# """
+#     response = openai.ChatCompletion.create(
+#         model="gpt-3.5-turbo",
+#         messages=[{
+#             "role": "user",
+#             "content": prompt
+#         }],
+#         temperature=0.8,
+#         max_tokens=60
+#     )
+#     return response.choices[0].message["content"].strip()
 
 # 1時〜9時はスキップ
 current_hour = datetime.now().hour
@@ -92,10 +93,10 @@ for rss_url in rss_urls:
         info_message = f"📢 {title}\n{post_link}"
         send_line_broadcast(info_message)
 
-        # コメント生成と通知2: コメント
-        comment = generate_comment(title)
-        comment_message = f"{comment}"
-        send_line_broadcast(comment_message)
+        # コメント生成と通知2は無効化
+        # comment = generate_comment(title)
+        # comment_message = f"{comment}"
+        # send_line_broadcast(comment_message)
 
         # 最後に通知したリンクを記録
         last_posts[user] = post_link
