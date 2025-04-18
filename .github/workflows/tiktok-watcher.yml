@@ -8,35 +8,40 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Python
+      - uses: actions/checkout@v3  # リポジトリのクローン
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-
+          python-version: '3.10'  # 使用するPythonバージョン
       - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      # アーティファクトが存在する場合はダウンロード
-      - name: Download last_posts artifact if exists
-        uses: actions/download-artifact@v2
-        with:
-          name: last-posts
-          path: .
-        continue-on-error: true
-
+        run: pip install -r requirements.txt  # 依存関係のインストール
       - name: Run TikTok checker
-        run: python main.py
+        run: python main.py  # Pythonスクリプトを実行
         env:
-          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
-
-      # アーティファクトをアップロード
-      - name: Upload last_posts artifact
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}  # LINEアクセストークン
+      - name: Upload last_posts.json as artifact
         uses: actions/upload-artifact@v2
         with:
-          name: last-posts
-          path: last_posts.json
+          name: last_posts  # アップロードするアーティファクト名
+          path: last_posts.json  # アップロードするファイルのパス
+
+  download:
+    runs-on: ubuntu-latest
+    needs: check  # 'check'ジョブが完了した後に実行
+    steps:
+      - uses: actions/checkout@v3  # リポジトリのクローン
+      - name: Download last_posts.json artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: last_posts  # ダウンロードするアーティファクト名
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'  # 使用するPythonバージョン
+      - name: Install dependencies
+        run: pip install -r requirements.txt  # 依存関係のインストール
+      - name: Run TikTok checker
+        run: python main.py  # Pythonスクリプトを実行
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}  # LINEアクセストークン
