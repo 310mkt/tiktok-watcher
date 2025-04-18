@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # ⬇️ v2 に変更してアーティファクトを取得
+      # アーティファクトが存在する場合はダウンロード
       - name: Download last_posts artifact if exists
         uses: actions/download-artifact@v2
         with:
@@ -34,7 +34,7 @@ jobs:
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
 
-      # ⬇️ v2 に変更してアーティファクトを保存
+      # アーティファクトをアップロード
       - name: Upload last_posts artifact
         uses: actions/upload-artifact@v2
         with:
