@@ -35,7 +35,7 @@ jobs:
           fi
 
       - name: Upload last_posts.json as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2  # バージョンをv2に固定
         with:
           name: last_posts  # アップロードするアーティファクト名
           path: last_posts.json  # アップロードするファイルのパス
@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3  # リポジトリのクローン
       - name: Download last_posts.json artifact
-        uses: actions/download-artifact@v3  # v3を使用
+        uses: actions/download-artifact@v2  # v2を使用
         with:
           name: last_posts  # ダウンロードするアーティファクト名
       - name: Setup Python
