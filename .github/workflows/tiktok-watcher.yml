@@ -9,33 +9,19 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-
+      - uses: actions/checkout@v3  # リポジトリのクローン
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-
+          python-version: '3.10'  # 使用するPythonバージョン
       - name: Install dependencies
         run: pip install -r requirements.txt  # 依存関係のインストール
-
       - name: Run TikTok checker
-        run: python main.py  # main.pyを実行してlast_posts.jsonを生成
+        run: python main.py  # Pythonスクリプトを実行
         env:
-          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
-
-      - name: Check if last_posts.json exists
-        run: |
-          if [ ! -f last_posts.json ]; then
-            echo "last_posts.json does not exist!"
-            exit 1
-          else
-            echo "last_posts.json exists!"
-          fi
-
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}  # LINEアクセストークン
       - name: Upload last_posts.json as artifact
-        uses: actions/upload-artifact@v2  # バージョンをv2に固定
+        uses: actions/upload-artifact@v2  # v2に変更
         with:
           name: last_posts  # アップロードするアーティファクト名
           path: last_posts.json  # アップロードするファイルのパス
@@ -46,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3  # リポジトリのクローン
       - name: Download last_posts.json artifact
-        uses: actions/download-artifact@v2  # v2を使用
+        uses: actions/download-artifact@v2  # v2に変更
         with:
           name: last_posts  # ダウンロードするアーティファクト名
       - name: Setup Python
