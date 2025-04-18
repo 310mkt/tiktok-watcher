@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements.txt  # requirements.txtからインストール
 
       - name: Run the test script
         run: python test_openai_line.py
