@@ -6,50 +6,35 @@ import time
 # 環境変数からトークン取得
 LINE_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai.api_key = OPENAI_API_KEY
 
 # タイトル（仮の投稿タイトル）
 title = "新しいダンス動画を投稿しました🕺🔥"
 
-# OpenAIにコメント生成依頼
-openai.api_key = OPENAI_API_KEY
-
-# プロンプトの組み立て
-prompt = f"""
-以下のTikTokの動画タイトルに対するコメントを1つ考えてください。
-- コメント対象はアイドル
-- 面白くて、印象に残る
-- 短め（20文字以内）
-- 基本は相手を褒める内容
-- 誰も傷つけない内容
-
-タイトル: {title}
-コメント:
-"""
-
-# リトライ回数と待機時間
-retries = 1
-wait_time = 5
+# GPT-4でコメント生成
+retries = 5
+wait_time = 20  # 秒
 
 for attempt in range(retries):
     try:
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=prompt,
-            temperature=0.7,
-            max_tokens=60,
-            n=1,
-            stop=None
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "あなたはTikTok動画に対する短くて面白くて優しい返信コメントを考えるアシスタントです。"},
+                {"role": "user", "content": f"この投稿タイトルにコメントをつけて: 「{title}」"}
+            ],
+            temperature=0.8,
+            max_tokens=60
         )
-        comment = response.choices[0].text.strip()
+        comment = response['choices'][0]['message']['content'].strip()
         break
-    except openai.error.RateLimitError as e:
+    except openai.error.RateLimitError:
         print(f"Rate limit exceeded, retrying... ({attempt+1}/{retries})")
         if attempt == retries - 1:
-            print("Max retries exceeded, exiting.")
-            raise e
+            raise
         time.sleep(wait_time)
 
-# LINEでコメントを通知
+# LINE通知関数
 def send_line_broadcast(message):
     url = "https://api.line.me/v2/bot/message/broadcast"
     headers = {
@@ -66,6 +51,6 @@ def send_line_broadcast(message):
     print("Status:", res.status_code)
     print("Response:", res.text)
 
-# LINEに送信（2通送る）
+# 通知送信
 send_line_broadcast(f"📢 新しい投稿タイトル: {title}")
 send_line_broadcast(f"💬 自動返信コメント: {comment}")
