@@ -11,8 +11,8 @@ title = "新しいダンス動画を投稿しました🕺🔥"
 
 # OpenAIにコメント生成依頼
 openai.api_key = OPENAI_API_KEY
-response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
+response = openai.chat.Completion.create(
+    model="gpt-3.5-turbo",  # または最新のモデル
     messages=[
         {
             "role": "system",
@@ -24,7 +24,9 @@ response = openai.ChatCompletion.create(
         }
     ]
 )
-comment = response.choices[0].message.content.strip()
+
+# コメントを取得
+comment = response['choices'][0]['message']['content'].strip()
 
 # LINEでコメントを通知
 def send_line_broadcast(message):
