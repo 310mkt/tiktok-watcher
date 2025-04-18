@@ -1,59 +1,51 @@
-import os
-import requests
 import feedparser
-from openai import OpenAI
+import requests
+import os
 
 RSS_URL = os.getenv("RSS_URL")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
+LINE_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+# 新着チェック用に保存ファイル
+HISTORY_FILE = "latest_video.txt"
 
-# 過去動画の記録（GitHub Actionsでは毎回消えるため、代替手段が必要）
-seen_ids_file = "seen_ids.txt"
-if os.path.exists(seen_ids_file):
-    with open(seen_ids_file, "r") as f:
-        seen_ids = set(f.read().splitlines())
-else:
-    seen_ids = set()
+def get_latest_video_url():
+    feed = feedparser.parse(RSS_URL)
+    if feed.entries:
+        return feed.entries[0].link
+    return None
 
-feed = feedparser.parse(RSS_URL)
-new_videos = []
+def is_new_video(latest_url):
+    if not os.path.exists(HISTORY_FILE):
+        return True
+    with open(HISTORY_FILE, "r") as f:
+        saved_url = f.read().strip()
+    return saved_url != latest_url
 
-for entry in feed.entries:
-    if entry.id not in seen_ids:
-        new_videos.append(entry)
-        seen_ids.add(entry.id)
+def save_latest_video(url):
+    with open(HISTORY_FILE, "w") as f:
+        f.write(url)
 
-if not new_videos:
-    print("新着なし")
-    exit()
+def send_broadcast_message(text):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {LINE_TOKEN}"
+    }
+    payload = {
+        "messages": [{
+            "type": "text",
+            "text": text
+        }]
+    }
+    r = requests.post("https://api.line.me/v2/bot/message/broadcast", headers=headers, json=payload)
+    print(f"Sent! Status: {r.status_code}, Response: {r.text}")
 
-for entry in new_videos:
-    prompt = f"この動画の内容に合う自然な日本語のコメントを作成してください：{entry.title}"
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    comment = response.choices[0].message.content.strip()
+def main():
+    latest_url = get_latest_video_url()
+    if latest_url and is_new_video(latest_url):
+        send_broadcast_message(f"新しいTikTok動画が投稿されました！\n{latest_url}")
+        save_latest_video(latest_url)
+    else:
+        print("新着動画なし")
 
-    # LINE通知（Messaging API）
-    requests.post(
-        "https://api.line.me/v2/bot/message/broadcast",
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
-        },
-        data = {
-            "messages": [
-                {
-                    "type": "text",
-                    "text": "こんにちは！新着動画があります📢"
-                }
-            ]
-        }
-    )
-
-# 更新されたIDを保存
-with open(seen_ids_file, "w") as f:
-    f.write("\n".join(seen_ids))
+if __name__ == "__main__":
+    main()
