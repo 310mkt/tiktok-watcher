@@ -3,14 +3,13 @@ import os
 import requests
 import json
 from datetime import datetime
-import openai
 
 # 環境変数からトークンを取得
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # OpenAI APIキー設定
-openai.api_key = OPENAI_API_KEY
+# openai.api_key = OPENAI_API_KEY
 
 # 複数のRSS URLをここにリストで記述
 rss_urls = [
