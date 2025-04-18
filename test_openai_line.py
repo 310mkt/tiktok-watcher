@@ -13,8 +13,10 @@ title = "新しいダンス動画を投稿しました🕺🔥"
 # OpenAIにコメント生成依頼
 openai.api_key = OPENAI_API_KEY
 
-# リトライ回数
-retries = 5
+# リトライ回数を増やし、待機時間を長く
+retries = 10  # リトライ回数を増やす
+wait_time = 30  # 待機時間を30秒に変更
+
 for attempt in range(retries):
     try:
         response = openai.ChatCompletion.create(  # 新しいAPIを使用
@@ -35,7 +37,7 @@ for attempt in range(retries):
         if attempt == retries - 1:  # 最後のリトライで失敗した場合
             print("Max retries exceeded, exiting.")
             raise e
-        time.sleep(10)  # 10秒待機してから再試行
+        time.sleep(wait_time)  # 待機時間を30秒に変更
 
 # LINEでコメントを通知
 def send_line_broadcast(message):
