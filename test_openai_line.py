@@ -11,7 +11,7 @@ title = "新しいダンス動画を投稿しました🕺🔥"
 
 # OpenAIにコメント生成依頼
 openai.api_key = OPENAI_API_KEY
-response = openai.completions.create(  # 修正箇所
+response = openai.ChatCompletion.create(  # ChatCompletion.create に変更
     model="gpt-3.5-turbo",  # または最新のモデル
     messages=[
         {
