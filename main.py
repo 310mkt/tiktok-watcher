@@ -2,43 +2,35 @@ import feedparser
 import os
 import requests
 import json
+import openai
 from datetime import datetime
-import pytz
 
-# ====== 時間による実行制御（JSTでAM1:00〜AM9:00はスキップ） ======
-jst = pytz.timezone('Asia/Tokyo')
-now = datetime.now(jst)
-hour = now.hour
-
-if 1 <= hour < 9:
-    print("⏰ AM1:00〜AM9:00 の間なので処理をスキップします。")
-    exit()
-
-# ====== 環境変数からLINEトークンを取得 ======
+# 環境変数からトークンを取得
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# ====== 監視する複数のTikTokユーザーのRSS URL ======
+# OpenAI APIキー設定
+openai.api_key = OPENAI_API_KEY
+
+# 複数のRSS URLをここにリストで記述
 rss_urls = [
     "https://rsshub.app/tiktok/user/_ritsuki_hikaru",
     "https://rsshub.app/tiktok/user/yanagi_miyu_official"
 ]
 
-# ====== 最後に通知した投稿リンクの保存ファイル ======
+# 通知履歴ファイル
 last_post_file = "last_posts.json"
 
-# ====== 最後の通知リンクを読み込み ======
 def load_last_posts():
     if os.path.exists(last_post_file):
         with open(last_post_file, "r") as f:
             return json.load(f)
     return {}
 
-# ====== 最後の通知リンクを保存 ======
 def save_last_posts(last_posts):
     with open(last_post_file, "w") as f:
         json.dump(last_posts, f)
 
-# ====== LINE一斉配信（Broadcast） ======
 def send_line_broadcast(message):
     url = "https://api.line.me/v2/bot/message/broadcast"
     headers = {
@@ -53,7 +45,34 @@ def send_line_broadcast(message):
     }
     requests.post(url, headers=headers, json=data)
 
-# ====== 実行ロジック ======
+def generate_comment(title):
+    prompt = f"""
+以下のTikTokの動画タイトルに対するコメントを1つ考えてください。
+- コメント対象はアイドル
+- 面白くて、印象に残る
+- 短め（20文字以内）
+- 基本は相手を褒める内容
+- 誰も傷つけない内容
+
+タイトル: {title}
+コメント:
+"""
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{
+            "role": "user",
+            "content": prompt
+        }],
+        temperature=0.8,
+        max_tokens=60
+    )
+    return response.choices[0].message["content"].strip()
+
+# 1時〜9時はスキップ
+current_hour = datetime.now().hour
+if 1 <= current_hour < 9:
+    exit()
+
 last_posts = load_last_posts()
 
 for rss_url in rss_urls:
@@ -61,17 +80,21 @@ for rss_url in rss_urls:
     if feed.entries:
         latest_entry = feed.entries[0]
         post_link = latest_entry.link
-        user = rss_url.split("/")[-1]  # TikTokユーザー名
+        user = rss_url.split("/")[-1]
         title = latest_entry.title
 
-        # 通知済みの場合はスキップ
         if last_posts.get(user) == post_link:
             continue
 
-        # 新規投稿をLINEで通知
-        message = f"📢「{title}」\n{post_link}"
-        send_line_broadcast(message)
+        # 通知1: 投稿の情報
+        info_message = f"📢 {title}\n{post_link}"
+        send_line_broadcast(info_message)
 
-        # 通知済みリンクを保存
+        # コメント生成と通知2: コメント
+        comment = generate_comment(title)
+        comment_message = f"{comment}"
+        send_line_broadcast(comment_message)
+
+        # 最後に通知したリンクを記録
         last_posts[user] = post_link
         save_last_posts(last_posts)
