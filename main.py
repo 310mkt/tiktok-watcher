@@ -2,6 +2,7 @@ import feedparser
 import os
 import requests
 import json
+import pytz
 from datetime import datetime
 
 # 環境変数からトークンを取得
@@ -71,7 +72,10 @@ def send_line_broadcast(message):
 #     return response.choices[0].message["content"].strip()
 
 # 1時〜9時はスキップ
-current_hour = datetime.now().hour
+# 日本時間 (JST) のタイムゾーンを取得
+japan_timezone = pytz.timezone('Asia/Tokyo')
+# 日本時間で現在の時間を取得
+current_hour = datetime.now(japan_timezone).hour
 if 1 <= current_hour < 9:
     exit()
 
@@ -86,6 +90,7 @@ for rss_url in rss_urls:
         title = latest_entry.title
 
         if last_posts.get(user) == post_link:
+            print(f"Skipping post for {user} (link: {post_link})")  # デバッグ用ログ
             continue  # 既に通知した投稿はスキップ
 
         # 通知1: 投稿の情報
