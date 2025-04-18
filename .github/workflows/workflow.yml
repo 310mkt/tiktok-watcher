@@ -1,9 +1,7 @@
-name: TikTok Watcher
-
-# on:
-#   schedule:
-#     - cron: "*/10 * * * *"  # 10分おきに実行
-#   workflow_dispatch:
+on:
+  schedule:
+    - cron: "*/10 * * * *"  # 10分おきに実行
+  workflow_dispatch:
 
 jobs:
   run:
@@ -15,10 +13,11 @@ jobs:
         with:
           python-version: "3.10"
       - name: Install dependencies
-        run: pip install openai requests
+        run: pip install openai requests feedparser
       - name: Run script
         run: python main.py
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LINE_NOTIFY_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
           RSS_URL: ${{ secrets.RSS_URL }}
