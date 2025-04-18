@@ -7,9 +7,9 @@ from datetime import datetime
 
 # 環境変数からトークンを取得
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+LAST_POST_URL = os.getenv("LAST_POST_URL")  # 環境変数から前回のURLを取得
 
-# OpenAI APIキー設定（必要であればコメント解除）
+# OpenAI APIキー設定
 # openai.api_key = OPENAI_API_KEY
 
 # 複数のRSS URLをここにリストで記述
@@ -20,24 +20,8 @@ rss_urls = [
     "https://rss.app/feeds/gGRbYTC3RVX3PPMa.xml"
 ]
 
-# 作業ディレクトリに保存するlast_posts.jsonのパス
-last_post_file = os.path.join(os.getcwd(), "last_posts.json")
-
-def load_last_posts():
-    try:
-        if os.path.exists(last_post_file):
-            with open(last_post_file, "r") as f:
-                return json.load(f)
-    except Exception as e:
-        print(f"Error loading last posts: {e}")
-    return {}
-
-def save_last_posts(last_posts):
-    try:
-        with open(last_post_file, "w") as f:
-            json.dump(last_posts, f)
-    except Exception as e:
-        print(f"Error saving last posts: {e}")
+# 通知履歴ファイル
+last_post_file = "last_posts.json"
 
 def send_line_broadcast(message):
     url = "https://api.line.me/v2/bot/message/broadcast"
@@ -85,8 +69,9 @@ current_hour = datetime.now(japan_timezone).hour
 if 1 <= current_hour < 9:
     exit()
 
-# 前回の投稿情報をロード
-last_posts = load_last_posts()
+# 前回の投稿URLをチェック
+if LAST_POST_URL:
+    print(f"Last post URL: {LAST_POST_URL}")
 
 # RSSフィードをチェック
 for rss_url in rss_urls:
@@ -98,7 +83,7 @@ for rss_url in rss_urls:
         title = latest_entry.title
 
         # 既に通知した投稿はスキップ
-        if last_posts.get(user) == post_link:
+        if LAST_POST_URL == post_link:
             print(f"Skipping post for {user} (link: {post_link})")  # デバッグ用ログ
             continue
 
@@ -111,6 +96,5 @@ for rss_url in rss_urls:
         # comment_message = f"{comment}"
         # send_line_broadcast(comment_message)
 
-        # 最後に通知したリンクを記録
-        last_posts[user] = post_link
-        save_last_posts(last_posts)
+        # 最後に通知したリンクを環境変数で更新（次回に反映）
+        os.environ["LAST_POST_URL"] = post_link  # 新しいURLを環境変数に設定
