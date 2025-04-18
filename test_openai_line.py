@@ -14,8 +14,8 @@ title = "新しいダンス動画を投稿しました🕺🔥"
 openai.api_key = OPENAI_API_KEY
 
 # リトライ回数を増やし、待機時間を長く
-retries = 10  # リトライ回数を増やす
-wait_time = 30  # 待機時間を30秒に変更
+retries = 1  # リトライ回数を増やす
+wait_time = 5  # 待機時間を30秒に変更
 
 for attempt in range(retries):
     try:
