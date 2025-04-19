@@ -1,100 +1,86 @@
-import feedparser
 import os
 import requests
-import json
-import pytz
-from datetime import datetime
+import feedparser
 
-# 環境変数からトークンを取得
+# RSSフィードとGitHub Secretsの対応
+rss_map = {
+    "ritsuki_hikaru": {
+        "url": "https://rss.app/feeds/LqP6Qvlf6WtxXyGS.xml",
+        "secret": "LAST_POST_RITSUKI"
+    },
+    "yanagi_miyu": {
+        "url": "https://rss.app/feeds/gGRbYTC3RVX3PPMa.xml",
+        "secret": "LAST_POST_MIYU"
+    }
+}
+
+GITHUB_REPO = os.getenv("GITHUB_REPO")
+GITHUB_TOKEN = os.getenv("GH_PAT")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-LAST_POST_URL = os.getenv("LAST_POST_URL")  # 環境変数から前回のURLを取得
 
-# OpenAI APIキー設定
-# openai.api_key = OPENAI_API_KEY
+def get_secret(secret_name):
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/{secret_name}"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json"
+    }
+    res = requests.get(url, headers=headers)
+    if res.status_code == 200:
+        return res.json().get("value")
+    return None
 
-# 複数のRSS URLをここにリストで記述
-rss_urls = [
-    # @_ritsuki_hikaru
-    "https://rss.app/feeds/LqP6Qvlf6WtxXyGS.xml",
-    # @yanagi_miyu_official
-    "https://rss.app/feeds/gGRbYTC3RVX3PPMa.xml"
-]
+def update_secret(secret_name, secret_value):
+    import base64
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import padding
+    from cryptography.hazmat.primitives import hashes
 
-# 通知履歴ファイル
-last_post_file = "last_posts.json"
+    # GitHubの公開鍵を取得
+    pubkey_url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/public-key"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json"
+    }
+    pubkey_res = requests.get(pubkey_url, headers=headers).json()
+    key_id = pubkey_res["key_id"]
+    public_key = base64.b64decode(pubkey_res["key"])
+
+    # RSA暗号化
+    encrypted = rsa.encrypt(
+        secret_value.encode(),
+        rsa.RSAPublicNumbers(65537, int.from_bytes(public_key, 'big')).public_key()
+    )
+
+    encrypted_value = base64.b64encode(encrypted).decode()
+
+    payload = {
+        "encrypted_value": encrypted_value,
+        "key_id": key_id
+    }
+    secret_url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/{secret_name}"
+    res = requests.put(secret_url, headers=headers, json=payload)
+    return res.status_code in [200, 201]
 
 def send_line_broadcast(message):
-    url = "https://api.line.me/v2/bot/message/broadcast"
     headers = {
         "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
         "Content-Type": "application/json"
     }
     data = {
-        "messages": [{
-            "type": "text",
-            "text": message
-        }]
+        "messages": [{"type": "text", "text": message}]
     }
-    requests.post(url, headers=headers, json=data)
+    requests.post("https://api.line.me/v2/bot/message/broadcast", headers=headers, json=data)
 
-# コメント生成関数は一時的に無効化
-# def generate_comment(title):
-#     prompt = f"""
-#     以下のTikTokの動画タイトルに対するコメントを1つ考えてください。
-#     - コメント対象はアイドル
-#     - 面白くて、印象に残る
-#     - 短め（20文字以内）
-#     - 基本は相手を褒める内容
-#     - 誰も傷つけない内容
+for name, data in rss_map.items():
+    feed = feedparser.parse(data["url"])
+    if not feed.entries:
+        continue
 
-#     タイトル: {title}
-#     コメント:
-#     """
-#     response = openai.ChatCompletion.create(
-#         model="gpt-3.5-turbo",
-#         messages=[{
-#             "role": "user",
-#             "content": prompt
-#         }],
-#         temperature=0.8,
-#         max_tokens=60
-#     )
-#     return response.choices[0].message["content"].strip()
+    latest_link = feed.entries[0].link
+    last_link = get_secret(data["secret"])
 
-# 1時〜9時はスキップ
-# 日本時間 (JST) のタイムゾーンを取得
-japan_timezone = pytz.timezone('Asia/Tokyo')
-# 日本時間で現在の時間を取得
-current_hour = datetime.now(japan_timezone).hour
-if 1 <= current_hour < 9:
-    exit()
-
-# 前回の投稿URLをチェック
-if LAST_POST_URL:
-    print(f"Last post URL: {LAST_POST_URL}")
-
-# RSSフィードをチェック
-for rss_url in rss_urls:
-    feed = feedparser.parse(rss_url)
-    if feed.entries:
-        latest_entry = feed.entries[0]
-        post_link = latest_entry.link
-        user = rss_url.split("/")[-1]
-        title = latest_entry.title
-
-        # 既に通知した投稿はスキップ
-        if LAST_POST_URL == post_link:
-            print(f"Skipping post for {user} (link: {post_link})")  # デバッグ用ログ
-            continue
-
-        # 通知1: 投稿の情報
-        info_message = f"📢 {title}\n{post_link}"
-        send_line_broadcast(info_message)
-
-        # コメント生成と通知2は無効化
-        # comment = generate_comment(title)
-        # comment_message = f"{comment}"
-        # send_line_broadcast(comment_message)
-
-        # 最後に通知したリンクを環境変数で更新（次回に反映）
-        os.environ["LAST_POST_URL"] = post_link  # 新しいURLを環境変数に設定
+    if latest_link != last_link:
+        title = feed.entries[0].title
+        send_line_broadcast(f"📢 {title}\n{latest_link}")
+        update_secret(data["secret"], latest_link)
