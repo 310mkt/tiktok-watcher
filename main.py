@@ -64,21 +64,22 @@ def send_line_broadcast(message):
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
 
-# メイン処理
+# メイン処理（非同期対応）
 async def main():
+    # TikTokApiを非同期で使用
     async with TikTokApi() as api:
         for name, data in tiktok_users.items():
             sec_uid = data["sec_uid"]
             secret_key = data["secret"]
 
-            user = api.user(sec_uid=sec_uid)
-            videos = await user.videos(count=1)  # 非同期に取得
+            user = await api.user(sec_uid=sec_uid)  # 非同期でユーザー情報を取得
+            videos = await user.videos(count=1)  # 非同期に動画を取得
 
             if not videos:
                 print(f"No videos for {name}.")
                 continue
 
-            latest_video = videos[0]  # 最初の動画を取得
+            latest_video = videos[0]
             latest_url = f"https://www.tiktok.com/@{user.username}/video/{latest_video.id}"
             current_value = os.getenv(secret_key)
 
@@ -89,6 +90,6 @@ async def main():
             else:
                 print(f"No update for {name}.")
 
-# メイン実行
 if __name__ == "__main__":
-    asyncio.run(main())  # 非同期処理を実行
+    # 非同期処理を実行
+    asyncio.run(main())
