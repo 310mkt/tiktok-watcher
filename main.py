@@ -63,17 +63,15 @@ def send_line_broadcast(message):
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
 
-# メイン処理（同期対応）
+# メイン処理
 def main():
-    # TikTokApiを通常通りインスタンス化
-    api = TikTokApi.get_instance()
-
+    api = TikTokApi()  # 直接インスタンス化
     for name, data in tiktok_users.items():
         sec_uid = data["sec_uid"]
         secret_key = data["secret"]
 
         user = api.user(sec_uid=sec_uid)  # ユーザー情報を取得
-        videos = user.videos(count=1)  # 動画を取得
+        videos = user.videos(count=1)  # 最新の動画を1件取得
 
         if not videos:
             print(f"No videos for {name}.")
