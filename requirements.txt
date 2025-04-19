@@ -3,3 +3,4 @@ requests
 cryptography
 pytz==2023.3
 openai==0.27.0
+pynacl
