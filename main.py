@@ -1,6 +1,7 @@
 import os
 import base64
 import requests
+import asyncio
 from TikTokApi import TikTokApi
 from nacl import encoding, public
 
@@ -64,29 +65,30 @@ def send_line_broadcast(message):
     response.raise_for_status()
 
 # メイン処理
-def main():
-    api = TikTokApi()
-    for name, data in tiktok_users.items():
-        sec_uid = data["sec_uid"]
-        secret_key = data["secret"]
+async def main():
+    async with TikTokApi() as api:
+        for name, data in tiktok_users.items():
+            sec_uid = data["sec_uid"]
+            secret_key = data["secret"]
 
-        user = api.user(sec_uid=sec_uid)
-        videos = user.videos(count=1)
+            user = api.user(sec_uid=sec_uid)
+            videos = await user.videos(count=1)  # 非同期に取得
 
-        if not videos:
-            print(f"No videos for {name}.")
-            continue
+            if not videos:
+                print(f"No videos for {name}.")
+                continue
 
-        latest_video = videos[0]
-        latest_url = f"https://www.tiktok.com/@{user.username}/video/{latest_video.id}"
-        current_value = os.getenv(secret_key)
+            latest_video = videos[0]  # 最初の動画を取得
+            latest_url = f"https://www.tiktok.com/@{user.username}/video/{latest_video.id}"
+            current_value = os.getenv(secret_key)
 
-        if current_value != latest_url:
-            message = f"📢 {name}:\n{latest_video.desc}\n{latest_url}"
-            send_line_broadcast(message)
-            update_secret(secret_key, latest_url)
-        else:
-            print(f"No update for {name}.")
+            if current_value != latest_url:
+                message = f"📢 {name}:\n{latest_video.desc}\n{latest_url}"
+                send_line_broadcast(message)
+                update_secret(secret_key, latest_url)
+            else:
+                print(f"No update for {name}.")
 
+# メイン実行
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())  # 非同期処理を実行
