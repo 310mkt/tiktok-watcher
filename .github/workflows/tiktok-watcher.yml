@@ -1,26 +1,27 @@
-name: TikTok RSS Watcher
+name: TikTok Watcher
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
-  workflow_dispatch:
+    - cron: "*/10 * * * *"  # 10分おきに実行
+  workflow_dispatch:       # 手動実行も可能
 
 jobs:
-  run-check:
+  check:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install feedparser cryptography requests
+        run: pip install -r requirements.txt
 
-      - name: Run watcher script
+      - name: Run TikTok checker
         run: python main.py
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
