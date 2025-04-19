@@ -3,10 +3,9 @@ import json
 import base64
 import requests
 import feedparser
-from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
+from nacl import encoding, public
 
 # 定義（GitHubの情報）
 GITHUB_REPO = os.environ["GITHUB_REPOSITORY"]
@@ -38,24 +37,13 @@ def get_public_key():
     response.raise_for_status()
     return response.json()
 
-# GitHub Secretsを更新する関数
+# GitHub Secretsを更新する関数（Libsodium で暗号化）
 def update_secret(secret_name, value):
     key_info = get_public_key()
-    # 公開鍵をbase64デコードし、PEM形式に変換
-    public_key_bytes = base64.b64decode(key_info["key"])
-    public_key = serialization.load_pem_public_key(
-        public_key_bytes,
-        backend=default_backend()
-    )
-    
-    # RSA暗号化で公開鍵を使用
-    encrypted = public_key.encrypt(
-        value.encode(),
-        padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
-    )
-    
-    # 暗号化されたデータをbase64エンコードしてGitHubに送信
-    encrypted_value = base64.b64encode(encrypted).decode()
+    public_key = public.PublicKey(key_info["key"].encode("utf-8"), encoding.Base64Encoder())
+    sealed_box = public.SealedBox(public_key)
+    encrypted_value = base64.b64encode(sealed_box.encrypt(value.encode("utf-8"))).decode("utf-8")
+
     url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/{secret_name}"
     response = requests.put(url, headers=HEADERS, json={
         "encrypted_value": encrypted_value,
@@ -97,7 +85,7 @@ def main():
 
         # 最新のURLと保存されているURLが異なればLINE通知を送信し、Secretsを更新
         if current_value != latest_link:
-            message = f"📢 {name}:\n{latest_title}\n{latest_link}"
+            message = f"📢{latest_title}\n{latest_link}"
             send_line_broadcast(message)
             update_secret(secret_key, latest_link)
         else:
