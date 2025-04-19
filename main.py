@@ -1,25 +1,10 @@
 import os
-import json
+import base64
 import requests
 from TikTokApi import TikTokApi
+from nacl import encoding, public
 
-# LINE設定
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-
-# ユーザーごとの設定
-tiktok_users = {
-    "ritsuki": {
-        "sec_uid": os.getenv("SEC_UID_RITSUKI"),
-        "last_id": os.getenv("LAST_POST_ID_RITSUKI"),
-        "secret_name": "LAST_POST_ID_RITSUKI"
-    },
-    "yanagi": {
-        "sec_uid": os.getenv("SEC_UID_YANAGI"),
-        "last_id": os.getenv("LAST_POST_ID_YANAGI"),
-        "secret_name": "LAST_POST_ID_YANAGI"
-    }
-}
-
+# GitHub Secrets
 GITHUB_REPO = os.environ["GITHUB_REPOSITORY"]
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 HEADERS = {
@@ -27,31 +12,43 @@ HEADERS = {
     "Accept": "application/vnd.github+json"
 }
 
-# 公開鍵取得
+# LINE設定
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
+
+# 対象ユーザーのリスト（sec_uid取得済み）
+tiktok_users = {
+    "RITSUKI": {
+        "sec_uid": "MS4wLjABAAAAQHbSXupM9HaW6UHNF62i1onY0yx_oqnGGMoSSMqvUSPmwrx48w9XbIrNK5klBqsV",
+        "secret": "LAST_POST_RITSUKI"
+    },
+    "YANAGI": {
+        "sec_uid": "MS4wLjABAAAAInbsNZdhBVMir_rYQ7nGuO3YRnkjBIMfi-mA0ggfe0fYpPAUodhafkKNCviSbCth",
+        "secret": "LAST_POST_YANAGI"
+    }
+}
+
+# 公開鍵の取得
 def get_public_key():
     url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/public-key"
-    res = requests.get(url, headers=HEADERS)
-    res.raise_for_status()
-    return res.json()
+    response = requests.get(url, headers=HEADERS)
+    response.raise_for_status()
+    return response.json()
 
-# シークレット更新
-from nacl import encoding, public
+# GitHub Secretsの更新
 def update_secret(secret_name, value):
     key_info = get_public_key()
-    pk = public.PublicKey(key_info["key"].encode("utf-8"), encoding.Base64Encoder())
-    box = public.SealedBox(pk)
-    encrypted_value = box.encrypt(value.encode("utf-8"))
-    encrypted_b64 = base64.b64encode(encrypted_value).decode("utf-8")
-
+    public_key = public.PublicKey(key_info["key"].encode("utf-8"), encoding.Base64Encoder())
+    sealed_box = public.SealedBox(public_key)
+    encrypted_value = base64.b64encode(sealed_box.encrypt(value.encode("utf-8"))).decode("utf-8")
     url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/{secret_name}"
-    res = requests.put(url, headers=HEADERS, json={
-        "encrypted_value": encrypted_b64,
+    response = requests.put(url, headers=HEADERS, json={
+        "encrypted_value": encrypted_value,
         "key_id": key_info["key_id"]
     })
-    res.raise_for_status()
+    response.raise_for_status()
 
 # LINE通知
-def send_line_broadcast(msg):
+def send_line_broadcast(message):
     url = "https://api.line.me/v2/bot/message/broadcast"
     headers = {
         "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
@@ -60,35 +57,36 @@ def send_line_broadcast(msg):
     data = {
         "messages": [{
             "type": "text",
-            "text": msg
+            "text": message
         }]
     }
-    res = requests.post(url, headers=headers, json=data)
-    res.raise_for_status()
+    response = requests.post(url, headers=headers, json=data)
+    response.raise_for_status()
 
 # メイン処理
 def main():
     with TikTokApi() as api:
-        for name, info in tiktok_users.items():
-            sec_uid = info["sec_uid"]
-            secret_key = info["secret_name"]
-            last_post_id = info["last_id"]
+        for name, data in tiktok_users.items():
+            sec_uid = data["sec_uid"]
+            secret_key = data["secret"]
 
-            user_videos = api.user(sec_uid=sec_uid).videos(count=1)
-            if not user_videos:
+            user = api.user(sec_uid=sec_uid)
+            videos = user.videos(count=1)
+
+            if not videos:
+                print(f"No videos for {name}.")
                 continue
 
-            latest_video = user_videos[0]
-            latest_id = latest_video.id
-            latest_desc = latest_video.desc
-            latest_url = f"https://www.tiktok.com/@{name}/video/{latest_id}"
+            latest_video = videos[0]
+            latest_url = f"https://www.tiktok.com/@{user.username}/video/{latest_video.id}"
+            current_value = os.getenv(secret_key)
 
-            if latest_id != last_post_id:
-                message = f"📢 {name}:\n{latest_desc}\n{latest_url}"
+            if current_value != latest_url:
+                message = f"📢 {name}:\n{latest_video.desc}\n{latest_url}"
                 send_line_broadcast(message)
-                update_secret(secret_key, latest_id)
+                update_secret(secret_key, latest_url)
             else:
-                print(f"No update for {name}")
+                print(f"No update for {name}.")
 
 if __name__ == "__main__":
     main()
