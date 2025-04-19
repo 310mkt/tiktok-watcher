@@ -65,28 +65,28 @@ def send_line_broadcast(message):
 
 # メイン処理
 def main():
-    with TikTokApi() as api:
-        for name, data in tiktok_users.items():
-            sec_uid = data["sec_uid"]
-            secret_key = data["secret"]
+    api = TikTokApi()
+    for name, data in tiktok_users.items():
+        sec_uid = data["sec_uid"]
+        secret_key = data["secret"]
 
-            user = api.user(sec_uid=sec_uid)
-            videos = user.videos(count=1)
+        user = api.user(sec_uid=sec_uid)
+        videos = user.videos(count=1)
 
-            if not videos:
-                print(f"No videos for {name}.")
-                continue
+        if not videos:
+            print(f"No videos for {name}.")
+            continue
 
-            latest_video = videos[0]
-            latest_url = f"https://www.tiktok.com/@{user.username}/video/{latest_video.id}"
-            current_value = os.getenv(secret_key)
+        latest_video = videos[0]
+        latest_url = f"https://www.tiktok.com/@{user.username}/video/{latest_video.id}"
+        current_value = os.getenv(secret_key)
 
-            if current_value != latest_url:
-                message = f"📢 {name}:\n{latest_video.desc}\n{latest_url}"
-                send_line_broadcast(message)
-                update_secret(secret_key, latest_url)
-            else:
-                print(f"No update for {name}.")
+        if current_value != latest_url:
+            message = f"📢 {name}:\n{latest_video.desc}\n{latest_url}"
+            send_line_broadcast(message)
+            update_secret(secret_key, latest_url)
+        else:
+            print(f"No update for {name}.")
 
 if __name__ == "__main__":
     main()
