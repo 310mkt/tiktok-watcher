@@ -29,8 +29,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Set up GitHub Secrets API access
+        run: |
+          curl -O https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
+          echo "${{ secrets.GH_PAT }}" > github_token.txt
+          echo "GitHub token is set for API access"
+
       - name: Run TikTok Watcher
         run: python main.py
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          LAST_POST_RITSUKI: ${{ secrets.LAST_POST_RITSUKI }}
+          LAST_POST_YANAGI: ${{ secrets.LAST_POST_YANAGI }}
