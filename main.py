@@ -1,11 +1,10 @@
 import os
 import base64
-import asyncio
 import requests
+import asyncio
 from TikTokApi import TikTokApi
 from nacl import encoding, public
 
-# GitHub Secrets
 GITHUB_REPO = os.environ["GITHUB_REPOSITORY"]
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 HEADERS = {
@@ -13,10 +12,8 @@ HEADERS = {
     "Accept": "application/vnd.github+json"
 }
 
-# LINE設定
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 
-# 対象ユーザーのリスト（sec_uid取得済み）
 tiktok_users = {
     "RITSUKI": {
         "sec_uid": "MS4wLjABAAAAQHbSXupM9HaW6UHNF62i1onY0yx_oqnGGMoSSMqvUSPmwrx48w9XbIrNK5klBqsV",
@@ -28,14 +25,12 @@ tiktok_users = {
     }
 }
 
-# 公開鍵の取得
 def get_public_key():
     url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/public-key"
     response = requests.get(url, headers=HEADERS)
     response.raise_for_status()
     return response.json()
 
-# GitHub Secretsの更新
 def update_secret(secret_name, value):
     key_info = get_public_key()
     public_key = public.PublicKey(key_info["key"].encode("utf-8"), encoding.Base64Encoder())
@@ -48,7 +43,6 @@ def update_secret(secret_name, value):
     })
     response.raise_for_status()
 
-# LINE通知
 def send_line_broadcast(message):
     url = "https://api.line.me/v2/bot/message/broadcast"
     headers = {
@@ -64,19 +58,16 @@ def send_line_broadcast(message):
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
 
-# メイン処理（非同期対応）
 async def main():
     async with TikTokApi() as api:
+        await api.create_sessions(1)  # Playwrightのブラウザセッションを1つ作成
+
         for name, data in tiktok_users.items():
             sec_uid = data["sec_uid"]
             secret_key = data["secret"]
 
             user = api.user(sec_uid=sec_uid)
-
-            # 非同期ジェネレーターから最初の1件を取得
-            videos = []
-            async for video in user.videos(count=1):
-                videos.append(video)
+            videos = [video async for video in user.videos(count=1)]
 
             if not videos:
                 print(f"No videos for {name}.")
