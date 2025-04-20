@@ -1,10 +1,9 @@
-# .github/workflows/main.yml
 name: TikTok Watcher
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/10 * * * *'  # 10分ごとに実行
 
 jobs:
   run-script:
@@ -17,10 +16,16 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'  # ← ここを 3.10 に修正する（絶対に3.1ではない）
+          python-version: '3.10'  # 3.10 以上を指定
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Run script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LAST_POST_RITSUKI: ${{ secrets.LAST_POST_RITSUKI }}
+          LAST_POST_YANAGI: ${{ secrets.LAST_POST_YANAGI }}
         run: python main.py
