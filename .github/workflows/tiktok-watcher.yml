@@ -1,34 +1,38 @@
-name: TikTok Watcher (API版)
+name: TikTok Watcher
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
-  workflow_dispatch:
+    - cron: "*/15 * * * *"  # 15分ごとに実行
+  workflow_dispatch:        # 手動実行も可能
 
 jobs:
-  watch:
+  run:
     runs-on: ubuntu-latest
-    env:
-      LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-      SEC_UID_RITSUKI: ${{ secrets.SEC_UID_RITSUKI }}
-      SEC_UID_YANAGI: ${{ secrets.SEC_UID_YANAGI }}
-      LAST_POST_ID_RITSUKI: ${{ secrets.LAST_POST_ID_RITSUKI }}
-      LAST_POST_ID_YANAGI: ${{ secrets.LAST_POST_ID_YANAGI }}
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: 3.10
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run TikTok watcher
-        run: python main.py
+      - name: Install Playwright
+        run: |
+          python -m playwright install
+
+      - name: Run script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LAST_POST_RITSUKI: ${{ secrets.LAST_POST_RITSUKI }}
+          LAST_POST_YANAGI: ${{ secrets.LAST_POST_YANAGI }}
+        run: |
+          python main.py
