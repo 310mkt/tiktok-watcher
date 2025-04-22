@@ -60,12 +60,12 @@ def send_line_broadcast(message):
 
 async def main():
     async with TikTokApi() as api:
-    await api.create_sessions(
-        num_sessions=1,
-        headless=False,
-        browser='webkit'
-    )
-
+        await api.create_sessions(
+            num_sessions=1,
+            headless=False,
+            browser='webkit'
+        )
+        
         for name, data in tiktok_users.items():
             sec_uid = data["sec_uid"]
             secret_key = data["secret"]
