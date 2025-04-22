@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Install Playwright browsers
+      - name: Install Playwright Browsers
         run: playwright install --with-deps
 
       - name: Run script
