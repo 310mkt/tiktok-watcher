@@ -5,6 +5,7 @@ import asyncio
 from TikTokApi import TikTokApi
 from nacl import encoding, public
 
+# GitHub Actions用
 GITHUB_REPO = os.environ["GITHUB_REPOSITORY"]
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 HEADERS = {
@@ -12,8 +13,10 @@ HEADERS = {
     "Accept": "application/vnd.github+json"
 }
 
+# LINE Messaging API用
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 
+# 監視対象のTikTokユーザー情報
 tiktok_users = {
     "RITSUKI": {
         "sec_uid": "MS4wLjABAAAAQHbSXupM9HaW6UHNF62i1onY0yx_oqnGGMoSSMqvUSPmwrx48w9XbIrNK5klBqsV",
@@ -25,12 +28,14 @@ tiktok_users = {
     }
 }
 
+# GitHub Secretsの公開鍵を取得
 def get_public_key():
     url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/secrets/public-key"
     response = requests.get(url, headers=HEADERS)
     response.raise_for_status()
     return response.json()
 
+# GitHub Secretsを更新
 def update_secret(secret_name, value):
     key_info = get_public_key()
     public_key = public.PublicKey(key_info["key"].encode("utf-8"), encoding.Base64Encoder())
@@ -43,6 +48,7 @@ def update_secret(secret_name, value):
     })
     response.raise_for_status()
 
+# LINEメッセージを送信
 def send_line_broadcast(message):
     url = "https://api.line.me/v2/bot/message/broadcast"
     headers = {
@@ -58,38 +64,41 @@ def send_line_broadcast(message):
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
 
+# メイン処理
 async def main():
     async with TikTokApi() as api:
         await api.create_sessions(
             num_sessions=1,
             browser="webkit",
-            browser_args=[
-                "--headless",
-                "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-            ]
+            headless=True  # GitHub Actionsでは必ずTrueに
         )
 
         for name, data in tiktok_users.items():
             sec_uid = data["sec_uid"]
             secret_key = data["secret"]
 
-            user = api.user(sec_uid=sec_uid)
-            videos = [video async for video in user.videos(count=1)]
+            try:
+                user = api.user(sec_uid=sec_uid)
+                videos = [video async for video in user.videos(count=1)]
 
-            if not videos:
-                print(f"No videos for {name}.")
-                continue
+                if not videos:
+                    print(f"No videos for {name}.")
+                    continue
 
-            latest_video = videos[0]
-            latest_url = f"https://www.tiktok.com/@{user.username}/video/{latest_video.id}"
-            current_value = os.getenv(secret_key)
+                latest_video = videos[0]
+                latest_url = f"https://www.tiktok.com/@{user.username}/video/{latest_video.id}"
+                current_value = os.getenv(secret_key)
 
-            if current_value != latest_url:
-                message = f"📢 {name}:\n{latest_video.desc}\n{latest_url}"
-                send_line_broadcast(message)
-                update_secret(secret_key, latest_url)
-            else:
-                print(f"No update for {name}.")
+                if current_value != latest_url:
+                    message = f"📢 {name}:\n{latest_video.desc}\n{latest_url}"
+                    send_line_broadcast(message)
+                    update_secret(secret_key, latest_url)
+                    print(f"Updated and notified: {name}")
+                else:
+                    print(f"No update for {name}.")
+
+            except Exception as e:
+                print(f"Error while checking {name}: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main())
