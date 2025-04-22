@@ -59,7 +59,7 @@ def send_line_broadcast(message):
     response.raise_for_status()
 
 async def main():
-    async with TikTokApi() as api:
+    async with TikTokApi(headless=False, browser='webkit') as api:
         await api.create_sessions(1)  # Playwrightのブラウザセッションを1つ作成
 
         for name, data in tiktok_users.items():
