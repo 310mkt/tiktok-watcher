@@ -62,9 +62,12 @@ async def main():
     async with TikTokApi() as api:
         await api.create_sessions(
             num_sessions=1,
-            headless=True,
-            browser='webkit'
-        )
+            browser="webkit",
+            browser_args=[
+                "--headless",
+                "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            ],
+　　　　　)
         
         for name, data in tiktok_users.items():
             sec_uid = data["sec_uid"]
