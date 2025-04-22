@@ -67,16 +67,9 @@ def send_line_broadcast(message):
 # メイン処理
 async def main():
     async with TikTokApi() as api:
-        # ヘッドレスモードオフ、ブラウザ表示
-        await api.create_sessions(
-            num_sessions=1,
-            browser="webkit",  # 使用するブラウザ
-            headless=False,  # ヘッドレスモードをオフに
-            browser_args=[
-                "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-            ]
-        )
-        
+        # セッションの作成（ヘッドレスモードはデフォルトで設定されます）
+        await api.create_sessions(num_sessions=1)
+
         # ユーザーごとに動画を取得し、更新を確認
         for name, data in tiktok_users.items():
             sec_uid = data["sec_uid"]
